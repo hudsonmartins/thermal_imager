@@ -2,13 +2,17 @@
 #include "Palettes.h"
 #include "SPI.h"
 #include "Lepton_I2C.h"
-
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 static const char *device = "/dev/spidev0.0";
 static uint8_t mode;
 static uint8_t bits = 8;
 static uint32_t speed = 16000000;
 int snapshotCount = 0;
+int frame = 0;
+static int raw [120][160];
 static void pabort(const char *s)
 {
 	perror(s);
@@ -109,12 +113,18 @@ void LeptonThread::run()
 					//reads the "ttt" number
 					segmentNumber = result[(i*PACKETS_PER_SEGMENT+j)*PACKET_SIZE] >> 4;
 						//if it's not the segment expected reads again
-						if(segmentNumber == 0)
+						if(segmentNumber == 0){
 							j = -1;
+							//resets += 1;
+							//usleep(1000);
+						}
 				}
 			}		
 			usleep(1000/106);
 		}
+	/*	if(resets >= 30) {
+			qDebug() << "done reading, resets: " << resets;
+		}*/
 
 		frameBuffer = (uint16_t *)result;
 		int row, column;
@@ -144,67 +154,106 @@ void LeptonThread::run()
 			}		
 		}
 		
-		std::cout << "Minima: " << raw2Celsius(minValue) <<" °C"<<std::endl;	
-		std::cout << "Maximo: " << raw2Celsius(maxValue) <<" °C"<<std::endl;	
-				
+	//	std::cout << "Minima: " << raw2Celsius(minValue) <<" °C"<<std::endl;	
+	//	std::cout << "Maximo: " << raw2Celsius(maxValue) <<" °C"<<std::endl;	
 		float diff = maxValue - minValue;
 		float scale = 255/diff;
 		QRgb color;
 		float valueCenter = 0;
-	for(int k=0; k<FRAME_SIZE_UINT16; k++) {
+		
+		for(int k=0; k<FRAME_SIZE_UINT16; k++) {
 			if(k % PACKET_SIZE_UINT16 < 2) {
 				continue;
 			}
+		
 			value = (frameBuffer[k] - minValue) * scale;
-
+			//printf("%u\n", frameBuffer[k]);
 			
 			const int *colormap = colormap_ironblack;
 			color = qRgb(colormap[3*value], colormap[3*value+1], colormap[3*value+2]);
 			
-				//Left side of the screen
-				if((k/PACKET_SIZE_UINT16) % 2 == 0){
+				if((k/PACKET_SIZE_UINT16) % 2 == 0){//1
 					column = (k % PACKET_SIZE_UINT16 - 2);
 					row = (k / PACKET_SIZE_UINT16)/2;
 				}
-				//Right side of the screen
-				else{
+				else{//2
 					column = ((k % PACKET_SIZE_UINT16 - 2))+(PACKET_SIZE_UINT16-2);
 					row = (k / PACKET_SIZE_UINT16)/2;
 				}	
-				//saves the pixel in the center of the screen
+				raw[row][column] = frameBuffer[k];
 				if(column == 80 && row == 60)
 					valueCenter = frameBuffer[k];
 								
 				myImage.setPixel(column, row, color);
 				
 		}
-		//draws the square in the center of the screen
 		drawSquare(valueCenter);
-		//Emit the signal for update
+		//lets emit the signal for update
 		emit updateImage(myImage);
+		frame++;
+		if(frame == 5){
+			snapshot();
+			//abort();
+		}
 	}
 	
-	//Close SPI port
+	//finally, close SPI port just bcuz
 	SpiClosePort(0);
 }
 
 void LeptonThread::drawSquare(float value){
-	//Draws the square
 	QPainter paint(&myImage);
 	paint.setPen(Qt::blue);
 	paint.drawRect(79,59,2,2);
-	
-	//Writes the temperature
-	paint.setPen(Qt::black);
+	//paint.setPen(Qt::black);
 	paint.setFont(QFont("Arial", 8));
-	paint.drawText(82,62, QString("%1 C").arg(raw2Celsius(value)));
+	paint.drawText(84,64, QString("%1 C").arg(raw2Celsius(value)));
 }
 
 void LeptonThread::snapshot(){
-	++snapshotCount;
-	//Saves the photo
-	myImage.save(QString("rgb%1.png").arg(snapshotCount), "PNG", 100);
+	snapshotCount++;
+	struct stat buf;
+	const char *inicio = "rgb";
+	const char *fim = ".png";
+	char meio[32];
+	sprintf(meio, "%d", snapshotCount);
+	char name[64];
+	//appending photo name
+	strcpy(name, inicio);
+	strcat(name, meio);
+	strcat(name, fim);
+	//if this name already exists
+	int exists = stat(name,&buf);
+		while(exists == 0){
+			snapshotCount++;
+			strcpy(name, inicio);
+			sprintf(meio, "%d", snapshotCount);
+			strcat(name, meio);
+			strcat(name, fim);
+			exists = stat(name, &buf);
+		}
+	//saving photo
+	myImage.save(QString(name), "PNG", 100);
+	//creating file name
+	fim = ".txt";
+	strcpy(name, inicio);
+	strcat(name, meio);
+	strcat(name, fim);
+	
+	FILE *arq = fopen(name,"wt");
+	char valor[64];
+
+	for(int i = 0; i < 120; i++){
+			for(int j = 0; j < 160; j++){
+				sprintf(valor, "%f", raw2Celsius(raw[i][j]));
+				fputs(valor, arq);
+				fputs(" ", arq);
+			}
+			fputs("\n", arq);
+	}
+	fclose(arq);
 }
+
 
 void LeptonThread::performFFC() {
 	//perform FFC
