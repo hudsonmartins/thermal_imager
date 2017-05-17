@@ -12,38 +12,38 @@
 #include "LeptonThread.h"
 #include "MyLabel.h"
 
+
 int main( int argc, char **argv )
 {
+	
+	int WindowWidth = 340*2;
+	int WindowHeight = 290*2;
+	int ImageWidth = 320*2;
+	int ImageHeight = 240*2;
+
 	//create the app
 	QApplication a( argc, argv );
 	
 	QWidget *myWidget = new QWidget;
-	myWidget->setGeometry(400, 300, 340*2, 290*2);
+	myWidget->setGeometry(400, 300, WindowWidth, WindowHeight);
 
 	//create an image placeholder for myLabel
 	//fill the top left corner with red, just bcuz
 	QImage myImage;
-	myImage = QImage(320*2, 240*2, QImage::Format_RGB888);
-	QRgb red = qRgb(255,0,0);
+	myImage = QImage(ImageWidth, ImageHeight, QImage::Format_RGB888);
 	
-	for(int i=0;i<160;i++) {
-		for(int j=0;j<120;j++) {
-			myImage.setPixel(i, j, red);
-		}
-	}
-
 	//create a label, and set it's image to the placeholder
 	MyLabel myLabel(myWidget);
-	myLabel.setGeometry(10, 10, 320*2, 240*2);
+	myLabel.setGeometry(10, 10, ImageWidth, ImageHeight);
 	myLabel.setPixmap(QPixmap::fromImage(myImage));
 
 	//create a FFC button
 	QPushButton *button1 = new QPushButton("Calibrar", myWidget);
-	button1->setGeometry((320*2)/2-100, (290*2)-35, 100, 30);
+	button1->setGeometry(ImageWidth/2-100, WindowHeight-60, 100, 30);
 	
 	//create a Snapshot button
 	QPushButton *button2 = new QPushButton("Tirar foto", myWidget);
-	button2->setGeometry((320*2)/2+50, (290*2)-35, 100, 30);
+	button2->setGeometry(ImageWidth/2+50, WindowHeight-60, 100, 30);
 
 	//create a thread to gather SPI data
 	//when the thread emits updateImage, the label should update its image accordingly

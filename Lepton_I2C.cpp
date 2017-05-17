@@ -20,7 +20,7 @@ int lepton_temperature(){
 	if(!_connected)
 		lepton_connect();
 	result = ((LEP_GetSysFpaTemperatureKelvin(&_port, &fpa_temp_kelvin)));
-	//printf("FPA temp kelvin: %i, code %i\n", fpa_temp_kelvin, result);
+	printf("FPA temp kelvin: %i, code %i\n", fpa_temp_kelvin, result);
 	return (fpa_temp_kelvin/100);
 }
 

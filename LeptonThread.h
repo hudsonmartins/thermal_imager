@@ -11,6 +11,8 @@
 #include <QString>
 #include <iostream>
 #include <QPainter>
+#include <cstdlib>
+
 
 #define PACKET_SIZE 164  //Bytes
 #define PACKET_SIZE_UINT16 (PACKET_SIZE/2)   
