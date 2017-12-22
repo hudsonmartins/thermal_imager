@@ -6,9 +6,6 @@ In order to build this example, you'll have to first install the qt4-dev-tools p
 
 You'll also need to enable the SPI and I2C interfaces on the raspi.
 
-If you wish to run this application without using sudo, you should add the user "pi" to the usergroup "i2c".
-
-
 You'll need to build the Lepton SDK binary in order to issue commands to the lepton over I2C, such as performing flat-field calibration. To do this, cd into LeptonSDKEmb32PUB and run the command: `make`
 
 
