@@ -12,7 +12,7 @@ If you wish to run this application without using sudo, you should add the user 
 You'll need to build the Lepton SDK binary in order to issue commands to the lepton over I2C, such as performing flat-field calibration. To do this, cd into LeptonSDKEmb32PUB and run the command: `make`
 
 
-Once everything's in place, cd into the raspberrypi_video folder, and run the command: `qmake && make`. This will compile the application.
+Once everything's in place, cd into the lepton_raspberry folder, and run the command: `qmake && make`. This will compile the application.
 
 In order for the application to run properly, a lepton camera must be attached in a specific way to the SPI, power, and ground pins of the Raspi's GPIO interface, as well as the I2C SDA/SCL pins.
 
